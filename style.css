@@ -1,0 +1,43 @@
+
+  /* 自作見出し */
+.rogo {
+    margin:auto;
+    width: 20%;
+  }
+  .subtitle{
+    font-size: 18px;
+    color: #36332e;
+    text-align: center;
+    margin-bottom: 3rem;
+    font-family: "游ゴシック","Yu Gothic"; font-weight: bold;
+  }
+  /* ダークモード風の背景と文字色 */
+.mode {
+    background-color: #fffdf6;  /* 黒に近いグレー */
+    color: #36332e;             /* やわらかい白文字 */
+  }
+  
+  /* ダークモード用の入力欄 */
+  .input {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #a2a78f;
+    padding: 10px;
+    border-radius: 6px;
+  }
+  
+  /* ダークモード用のボタン */
+  .button {
+    background-color: #36332e;
+    color: #f0f0f0;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+  }
+  
+  .button:hover {
+    background-color: #666;
+  }
