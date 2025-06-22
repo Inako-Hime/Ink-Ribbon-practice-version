@@ -3,6 +3,49 @@ const beliefInput = document.querySelector(".input:nth-of-type(2)");
 const saveButton = document.querySelector(".button");
 const characterList = document.getElementById("character-list");
 const projectSelect = document.getElementById("projectSelect");
+const addProjectButton = document.getElementById("addProjectButton");
+const newProjectNameInput = document.getElementById("newProjectName");
+const deleteProjectButton = document.getElementById("deleteProjectButton");
+const exportButton = document.getElementById("exportButton");
+const importFile = document.getElementById("importFile");
+
+
+// ✅ 起動時に作品一覧を復元
+const savedProjectList = localStorage.getItem('projectList');
+if (savedProjectList) {
+  const projects = JSON.parse(savedProjectList);
+  projectSelect.innerHTML = ''; // 一旦リセット
+  projects.forEach(p => {
+    const option = document.createElement('option');
+    option.value = p.value;
+    option.textContent = p.name;
+    projectSelect.appendChild(option);
+  });
+}
+
+
+// ✅ 作品を追加する処理
+addProjectButton.addEventListener("click", () => {
+  const newProject = newProjectNameInput.value.trim();
+  if (!newProject) return;
+
+  const newValue = `project-${newProject}`;
+
+  const option = document.createElement("option");
+  option.value = newValue;
+  option.textContent = newProject;
+  projectSelect.appendChild(option);
+
+  projectSelect.value = newValue;
+  currentProject = newValue;
+
+  characters = getCharacters(currentProject);
+  renderCharacters();
+
+  newProjectNameInput.value = "";
+  saveProjectList(); // 👈 追加！
+});
+
 
 // ⭐ 選ばれたプロジェクト（作品）を取得
 let currentProject = projectSelect.value;
@@ -66,5 +109,77 @@ projectSelect.addEventListener("change", () => {
   renderCharacters();
 });
 
-// 初期表示
-renderCharacters();
+deleteProjectButton.addEventListener("click", () => {
+  if (!confirm("この作品を削除しますか？キャラ情報もすべて消えます。")) return;
+
+  localStorage.removeItem(currentProject);
+
+  const optionToRemove = projectSelect.querySelector(
+    `option[value="${currentProject}"]`
+  );
+  if (optionToRemove) {
+    projectSelect.removeChild(optionToRemove);
+  }
+
+  saveProjectList(); // 👈 追加！
+
+  if (projectSelect.options.length > 0) {
+    currentProject = projectSelect.value = projectSelect.options[0].value;
+    characters = getCharacters(currentProject);
+    renderCharacters();
+  } else {
+    currentProject = "";
+    characters = [];
+    characterList.innerHTML = "";
+  }
+});
+
+// ✅ エクスポート処理
+exportButton.addEventListener('click', () => {
+  const dataStr = JSON.stringify(characters, null, 2); // 見やすく整形
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${currentProject}.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+});
+// ✅ インポート処理
+importFile.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error("JSON形式が正しくありません");
+
+      // 上書き保存
+      characters = imported;
+      localStorage.setItem(currentProject, JSON.stringify(characters));
+      renderCharacters();
+
+      alert("インポート成功しました");
+    } catch (err) {
+      alert("読み込み失敗：JSONファイルの形式が不正です");
+    }
+  };
+
+  reader.readAsText(file);
+});
+
+function saveProjectList() {
+  const projects = Array.from(projectSelect.options).map((option) => ({
+    name: option.textContent,
+    value: option.value,
+  }));
+  localStorage.setItem("projectList", JSON.stringify(projects));
+}
+
+
+

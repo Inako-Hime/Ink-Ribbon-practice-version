@@ -13,7 +13,7 @@
 </head>
 <body class="mode p-6">
     <p><img class="rogo" src="ロゴ.png"  alt="Ink Ribbon"></p>
-    
+
     <h1 class="subtitle">
       物語創作支援サイト
     </h1>
@@ -25,6 +25,23 @@
     <option value="project-1">作品A</option>
     <option value="project-2">作品B</option>
   </select>
+  <!-- 作品削除ボタン -->
+<button id="deleteProjectButton" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm mt-2">
+  選択中の作品を削除
+</button>
+<!-- JSONエクスポートボタン -->
+<button id="exportButton" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600 text-sm mt-2">
+  この作品のキャラをエクスポート（JSON）
+</button>
+<!-- JSONインポートボタン -->
+<label class="mt-2 block text-sm font-medium">インポート（JSONファイル）</label>
+<input type="file" id="importFile" accept=".json" class="border p-2 rounded w-full" />
+
+  <!-- 作品名の追加フォーム -->
+<div class="flex items-center gap-2 mt-2">
+  <input type="text" id="newProjectName" placeholder="新しい作品名を入力" class="border p-2 rounded w-full" />
+  <button id="addProjectButton" class="bg-indigo-500 text-white px-3 py-2 rounded hover:bg-indigo-600 text-sm">追加</button>
+</div>
 </section>
 
     <section class="my-section max-w-xl mx-auto">
