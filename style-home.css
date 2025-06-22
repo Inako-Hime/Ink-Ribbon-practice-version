@@ -1,0 +1,58 @@
+  /* 背景と文字色 */
+  .mode {
+    background-color: #fffdf6; 
+    color: #3D312A;            
+  }
+    /* グローバルナビ */
+.global-nav-container {
+    display: flex;
+    align-items: center;       /* 縦中央揃え */
+    background-color: #fffdf6;
+    padding: 10px 20px;
+    margin-bottom: 2rem; /* 例: 32pxの空間 */
+    border-bottom: 2px solid #3D312A; 
+  }
+  
+  .logo img {
+    height: 40px;              /* ロゴの高さ調整（適宜変更） */
+  }
+  
+  .global-nav {
+    list-style: none;
+    margin: 0 0 0 auto;        /* 左のマージンを自動で空けて右寄せに */
+    padding: 0;
+    display: flex;
+    
+  }
+  
+  .global-nav li:not(:last-child) {
+    margin-right: 5px;        /* メニューの間隔 */
+  }
+  
+  .global-nav li a {
+    position: relative;
+    display: inline-block;
+    padding: 10px 12px;
+    color: #3D312A;
+    text-decoration: none;
+    font-family: "游ゴシック","Yu Gothic"; font-weight: bold;
+  }
+  
+  .global-nav li a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 10px; /* テキストの下あたりに表示 */
+    width: 100%;
+    height: 2px;
+    background-color: #3D312A;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.2s ease;
+  }
+  
+  .global-nav li a:hover::after {
+    transform: scaleX(1); /* ホバー時に横幅を出す */
+  }
+  
+  
