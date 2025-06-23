@@ -20,6 +20,15 @@ const exportSuggestion = document.getElementById("exportSuggestion");
 const importSuggestion = document.getElementById("importSuggestion");
 const beliefXInput = document.getElementById("beliefX");
 const beliefYInput = document.getElementById("beliefY");
+
+const modalName = document.getElementById("modalName");
+const modalBelief = document.getElementById("modalBelief");
+const modalPersonality = document.getElementById("modalPersonality");
+const modalAbility = document.getElementById("modalAbility");
+const modalBackground = document.getElementById("modalBackground");
+const modalX = document.getElementById("modalX");
+const modalY = document.getElementById("modalY");
+
 const suggestionData = {
   誠実主義: {
     personality: ["嘘がうまい", "裏表がある", "誠実を貫きすぎる頑固さ"],
@@ -46,7 +55,7 @@ const beliefCoordinates = {
   秩序主義: { x: 0.5, y: 1.0 },
   自由主義: { x: 0.4, y: 0.1 },
 };
-
+let editingIndex = null;
 
 // ✅ 起動時に作品一覧を復元
 const savedProjectList = localStorage.getItem('projectList');
@@ -105,34 +114,28 @@ function renderCharacters() {
 
     const content = document.createElement("div");
     content.innerHTML = `
-      <h3 class="text-lg font-bold mb-1">${char.name}</h3>
-      <p><strong class="text-indigo-600">主義：</strong>${
-        char.belief || "（未設定）"
-      }</p>
-      <p><strong>性格ギャップ：</strong>${char.gapPersonality || "（なし）"}</p>
-      <p><strong>能力ギャップ：</strong>${char.gapAbility || "（なし）"}</p>
-      <p><strong>生い立ちギャップ：</strong>${
-        char.gapBackground || "（なし）"
-      }</p>
-    `;
+  <h3 class="text-lg font-bold mb-1">${char.name}</h3>
+  <p><strong class="text-indigo-600">主義：</strong>${
+    char.belief || "（未設定）"
+  }</p>
+  <p><strong>性格ギャップ：</strong>${char.gapPersonality || "（なし）"}</p>
+  <p><strong>能力ギャップ：</strong>${char.gapAbility || "（なし）"}</p>
+  <p><strong>生い立ちギャップ：</strong>${char.gapBackground || "（なし）"}</p>
+  <p><strong class="text-green-700">マトリクス座標：</strong>
+     x: ${char.beliefX ?? "未設定"}, y: ${char.beliefY ?? "未設定"}</p>
+`;
+
 
     // 編集ボタン
     const editButton = document.createElement("button");
     editButton.textContent = "編集";
     editButton.className =
       "text-white bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 text-sm";
-      editButton.addEventListener("click", () => {
-        nameInput.value = char.name;
-        beliefInput.value = char.belief || "";
-        gapPersonalityInput.value = char.gapPersonality || "";
-        gapAbilityInput.value = char.gapAbility || "";
-        gapBackgroundInput.value = char.gapBackground || "";
-        beliefXInput.value = char.beliefX ?? "";
-        beliefYInput.value = char.beliefY ?? "";
-        editIndex = index;
-        saveButton.textContent = "上書き保存";
-      });
-      
+
+    // ✅ 編集モーダルを開くように変更
+    editButton.addEventListener("click", () => {
+      openEditModal(index);
+    });
 
     // 削除ボタン
     const deleteButton = document.createElement("button");
@@ -153,6 +156,19 @@ function renderCharacters() {
     charItem.appendChild(content);
     charItem.appendChild(buttonGroup);
     characterList.appendChild(charItem);
+  });
+  // キャラカードの並び替え機能を有効化
+  new Sortable(characterList, {
+    animation: 150,
+    onEnd: () => {
+      // 並び替え後の順番を保存し直す
+      const newOrder = Array.from(characterList.children).map((card) => {
+        const name = card.querySelector("h3").textContent;
+        return characters.find((c) => c.name === name);
+      });
+      characters = newOrder;
+      localStorage.setItem(currentProject, JSON.stringify(characters));
+    },
   });
 }
 
@@ -244,6 +260,7 @@ saveButton.addEventListener("click", () => {
   localStorage.setItem(currentProject, JSON.stringify(characters));
   renderCharacters();
   renderMatrix();
+  enableMatrixDrag();
   nameInput.value = "";
   beliefInput.value = "";
   gapPersonalityInput.value = "";
@@ -344,7 +361,10 @@ projectSelect.addEventListener("change", () => {
   currentProject = projectSelect.value;
   characters = getCharacters(currentProject);
   renderCharacters();
+  renderMatrix(); // ← これを追加！
+  enableMatrixDrag();
 });
+
 
 deleteProjectButton.addEventListener("click", () => {
   if (!confirm("この作品を削除しますか？キャラ情報もすべて消えます。")) return;
@@ -437,10 +457,135 @@ function renderMatrix() {
     dot.style.transform = "translate(-50%, -50%)";
     matrixContainer.appendChild(dot);
   });
+  enableMatrixDrag();
 }
 renderMatrix();
+function enableMatrixDrag() {
+  const matrixContainer = document.getElementById("matrix-container");
+  if (!matrixContainer) return;
 
-beliefXInput.value = char.beliefX ?? "";
-beliefYInput.value = char.beliefY ?? "";
+  matrixContainer.querySelectorAll(".matrix-char").forEach((dot) => {
+    let isDragging = false;
+
+    // ⬇ キャラ名を埋め込む
+    const charName = dot.textContent;
+    dot.dataset.name = charName;
+
+    dot.addEventListener("mousedown", () => {
+      isDragging = true;
+      dot.style.zIndex = 1000;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+
+      const rect = matrixContainer.getBoundingClientRect();
+      const x = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+      const y = Math.min(Math.max((e.clientY - rect.top) / rect.height, 0), 1);
+
+      dot.style.left = `${x * 100}%`;
+      dot.style.top = `${(1 - y) * 100}%`; // Y軸は上が0
+      dot.style.transform = "translate(-50%, -50%)";
+
+      // ⬇ name で対象キャラを探す
+      const char = characters.find((c) => c.name === dot.dataset.name);
+      if (char) {
+        char.beliefX = x;
+        char.beliefY = y;
+        localStorage.setItem(currentProject, JSON.stringify(characters));
+
+        // ⬇ そのキャラのカードだけ更新（全文描画はしない）
+        updateCharacterCardCoordinates(char.name, x, y);
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (isDragging) {
+        isDragging = false;
+        dot.style.zIndex = "";
+      }
+    });
+  });
+}
+
+enableMatrixDrag(); // 👈これ追加！！
 
 
+
+
+
+
+// モーダル操作
+
+function openEditModal(index) {
+  const char = characters[index];
+  if (!char) return;
+
+  modalName.value = char.name || "";
+  modalBelief.value = char.belief || "";
+  modalPersonality.value = char.gapPersonality || "";
+  modalAbility.value = char.gapAbility || "";
+  modalBackground.value = char.gapBackground || "";
+  modalX.value = char.beliefX ?? "";
+  modalY.value = char.beliefY ?? "";
+
+  editingIndex = index;
+  console.log("モーダル表示処理中");
+  document.getElementById("editModal").classList.remove("hidden");
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").classList.add("hidden");
+  editingIndex = null;
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const modalSave = document.getElementById("modalSave");
+  const modalCancel = document.getElementById("modalCancel");
+  const editModal = document.getElementById("editModal");
+
+  modalSave.addEventListener("click", () => {
+    if (editingIndex === null) return;
+
+    const parsedX = parseFloat(modalX.value);
+    const parsedY = parseFloat(modalY.value);
+
+    characters[editingIndex] = {
+      name: modalName.value.trim(),
+      belief: modalBelief.value.trim(),
+      gapPersonality: modalPersonality.value.trim(),
+      gapAbility: modalAbility.value.trim(),
+      gapBackground: modalBackground.value.trim(),
+      beliefX: isNaN(parsedX) ? 0.5 : parsedX,
+      beliefY: isNaN(parsedY) ? 0.5 : parsedY,
+    };
+
+    localStorage.setItem(currentProject, JSON.stringify(characters));
+    renderCharacters();
+    renderMatrix();
+    enableMatrixDrag();
+    closeEditModal();
+  });
+
+  modalCancel.addEventListener("click", closeEditModal);
+
+  editModal.addEventListener("click", (e) => {
+    if (e.target === editModal) closeEditModal();
+  });
+});
+
+function updateCharacterCardCoordinates(name, x, y) {
+  const card = Array.from(document.querySelectorAll(".character-card")).find(
+    (c) => c.querySelector("h3")?.textContent === name
+  );
+
+  if (!card) return;
+
+  const coordText = card.querySelector("p:last-of-type");
+  if (coordText) {
+    coordText.innerHTML = `<strong class="text-green-700">マトリクス座標：</strong> x: ${x.toFixed(
+      2
+    )}, y: ${y.toFixed(2)}`;
+  }
+}

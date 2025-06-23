@@ -1,5 +1,8 @@
 
   /* 背景と文字色 */
+html {
+    background-color: #fffdf6;
+  }
 .mode {
     background-color: #fffdf6;  
     color: #3D312A;            
@@ -82,3 +85,31 @@
   transform: scaleX(1); /* ホバー時に横幅を出す */
 }
 
+
+
+
+/* キャラカード一覧（親コンテナ） */
+#character-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+/* 各キャラクターカード */
+.character-card {
+  flex: 1 1 360px;              /* 最小360px、拡大可（自動） */
+  max-width: 600px;             /* 最大600pxまで広がる */
+  min-height: 200px;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+  box-sizing: border-box;
+}
+
+.character-card:hover {
+  transform: scale(1.02);
+}

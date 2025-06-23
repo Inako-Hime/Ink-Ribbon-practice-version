@@ -1,4 +1,7 @@
   /* 背景と文字色 */
+  html {
+    background-color: #fffdf6;
+  }
   .mode {
     background-color: #fffdf6; 
     color: #3D312A;            
