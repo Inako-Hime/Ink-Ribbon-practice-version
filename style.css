@@ -309,22 +309,123 @@ html {
   margin-right: 2rem;
 }
 @media (max-width: 700px) {
-  .dropdown-panel {
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
+  body {
+    padding: 0;
+  }
+  .main-layout {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  .character-form, .form-and-matrix {
+    min-width: 0;
+    max-width: 100vw;
+    width: 100vw;
+    padding: 0.5rem 0.5rem 0 0.5rem;
+    box-sizing: border-box;
+  }
+  .character-list {
+    min-width: 0;
+    max-width: 100vw;
+    width: 100vw;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  #character-list {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+  .character-card {
+    min-width: 0;
+    max-width: 100vw;
+    width: 100%;
+    padding: 1rem;
+    font-size: 0.98em;
   }
   .top-controls {
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.5rem 0.5rem 0 0.5rem;
+    width: 100vw;
+  }
+  .top-dropdowns {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.5rem;
+    width: 100vw;
+  }
+  .dropdown-panel {
+    min-width: 0;
+    max-width: 100vw;
+    width: 100vw;
+    margin: 0;
+    padding: 1rem 0.5rem 0.5rem 0.5rem;
+    box-sizing: border-box;
+  }
+  .matrix-container {
+    min-width: 0;
+    max-width: 100vw;
+    width: 100vw;
+    height: 300px;
+    padding: 0;
+  }
+  .modal-content {
+    min-width: 0;
+    max-width: 98vw;
+    width: 98vw;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    gap: 0.5em;
+  }
+  .modal-fields, .modal-notes {
+    min-width: 0;
+    max-width: 100vw;
+    width: 100vw;
+    padding: 0;
+  }
+  .modal-content input, .modal-content textarea {
+    font-size: 1em;
+  }
+  .global-nav-container {
+    flex-direction: column;
+    padding: 6px 4px;
+    margin-bottom: 1rem;
+  }
+  .global-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2em;
+    margin: 0;
+  }
+  .global-nav li a {
+    padding: 8px 6px;
+    font-size: 1em;
+  }
+  .logo img {
+    height: 28px;
+  }
+  .button, .dropdown-panel .button, .dropdown-panel button, .dropdown-panel select, .toggle-btn {
+    width: 100%;
+    min-width: 0;
+    padding: 0.7em 0.5em;
+    font-size: 1em;
+    box-sizing: border-box;
+  }
+  .input {
+    font-size: 1em;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 }
-#matrixUI.dropdown-panel {
-  max-width: none;
-  width: auto;
-  padding: 0;
-  border: none;
-  box-shadow: none;
-  min-width: unset;
+
+@media (max-width: 480px) {
+  .matrix-container {
+    height: 200px;
+  }
+  .modal-content {
+    padding: 0.2rem;
+  }
 }
 
 /* =========================
