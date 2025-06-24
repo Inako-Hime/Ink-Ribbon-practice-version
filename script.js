@@ -1,62 +1,59 @@
-/*
- * キャラクター管理アプリ main script
- * - キャラ管理
- * - サジェスト管理
- * - プロジェクト管理
- * - マトリクス描画・ドラッグ
- *
- * 主な修正・改善点:
- * - Y座標の反転一貫性
- * - UI/UX改善
- * - コード整理
- */
+/* =========================
+  Ink Ribbon キャラクター管理サイト main script
+  初心者向け：各セクション・関数に丁寧なコメント
+========================= */
 
-// ===== 初期化・定数宣言 =====
-const nameInput = document.getElementById("nameInput");
-const beliefInput = document.getElementById("beliefInput");
-const saveButton = document.getElementById("saveButton");
-const characterList = document.getElementById("character-list");
-const projectSelect = document.getElementById("projectSelect");
-const addProjectButton = document.getElementById("addProjectButton");
-const newProjectNameInput = document.getElementById("newProjectName");
-const deleteProjectButton = document.getElementById("deleteProjectButton");
-const exportButton = document.getElementById("exportButton");
-const importFile = document.getElementById("importFile");
-const gapPersonalityInput = document.getElementById("gapPersonality");
-const gapAbilityInput = document.getElementById("gapAbility");
-const gapBackgroundInput = document.getElementById("gapBackground");
-const suggestionArea = document.getElementById("suggestionArea");
-const suggestBelief = document.getElementById("suggestBelief");
-const suggestType = document.getElementById("suggestType");
-const suggestValue = document.getElementById("suggestValue");
-const addSuggestion = document.getElementById("addSuggestion");
-const exportSuggestion = document.getElementById("exportSuggestion");
-const importSuggestion = document.getElementById("importSuggestion");
-const beliefXInput = document.getElementById("beliefX");
-const beliefYInput = document.getElementById("beliefY");
-const modalName = document.getElementById("modalName");
-const modalBelief = document.getElementById("modalBelief");
-const modalPersonality = document.getElementById("modalPersonality");
-const modalAbility = document.getElementById("modalAbility");
-const modalBackground = document.getElementById("modalBackground");
-const modalX = document.getElementById("modalX");
-const modalY = document.getElementById("modalY");
-const freeNoteInput = document.getElementById("freeNoteInput");
-const groupInput = document.getElementById("groupInput");
-const modalGroup = document.getElementById("modalGroup");
+// =========================
+// 1. 定数・グローバル変数宣言
+// =========================
+// 画面上の各要素（input, button, selectなど）を取得して変数に格納
+// これにより、後で「nameInput.value」などで値を取得・設定できる
+const nameInput = document.getElementById("nameInput"); // キャラ名入力欄
+const beliefInput = document.getElementById("beliefInput"); // 主義入力欄
+const saveButton = document.getElementById("saveButton"); // キャラ保存ボタン
+const characterList = document.getElementById("character-list"); // キャラ一覧表示エリア
+const projectSelect = document.getElementById("projectSelect"); // 作品選択プルダウン
+const addProjectButton = document.getElementById("addProjectButton"); // 作品追加ボタン
+const newProjectNameInput = document.getElementById("newProjectName"); // 新規作品名入力欄
+const deleteProjectButton = document.getElementById("deleteProjectButton"); // 作品削除ボタン
+const exportButton = document.getElementById("exportButton"); // エクスポートボタン
+const importFile = document.getElementById("importFile"); // インポートファイル選択
+const gapPersonalityInput = document.getElementById("gapPersonality"); // 性格ギャップ入力欄
+const gapAbilityInput = document.getElementById("gapAbility"); // 能力ギャップ入力欄
+const gapBackgroundInput = document.getElementById("gapBackground"); // 生い立ちギャップ入力欄
+const suggestionArea = document.getElementById("suggestionArea"); // サジェスト候補表示エリア
+const suggestBelief = document.getElementById("suggestBelief"); // サジェスト主義名入力
+const suggestType = document.getElementById("suggestType"); // サジェストタイプ選択
+const suggestValue = document.getElementById("suggestValue"); // サジェスト候補文入力
+const addSuggestion = document.getElementById("addSuggestion"); // サジェスト追加ボタン
+const exportSuggestion = document.getElementById("exportSuggestion"); // サジェストエクスポート
+const importSuggestion = document.getElementById("importSuggestion"); // サジェストインポート
+const beliefXInput = document.getElementById("beliefX"); // マトリクスX座標入力
+const beliefYInput = document.getElementById("beliefY"); // マトリクスY座標入力
+const modalName = document.getElementById("modalName"); // モーダル内キャラ名
+const modalBelief = document.getElementById("modalBelief"); // モーダル内主義
+const modalPersonality = document.getElementById("modalPersonality"); // モーダル内性格ギャップ
+const modalAbility = document.getElementById("modalAbility"); // モーダル内能力ギャップ
+const modalBackground = document.getElementById("modalBackground"); // モーダル内生い立ちギャップ
+const modalX = document.getElementById("modalX"); // モーダル内X座標
+const modalY = document.getElementById("modalY"); // モーダル内Y座標
+const freeNoteInput = document.getElementById("freeNoteInput"); // 自由記述欄
+const groupInput = document.getElementById("groupInput"); // グループ入力欄
+const modalGroup = document.getElementById("modalGroup"); // モーダル内グループ
+const colorInput = document.getElementById("colorInput"); // カラー入力欄
+const modalColor = document.getElementById("modalColor"); // モーダル内カラー
 
-// 作品名編集関連の要素
+// ===== 作品名編集・グループ管理の要素 =====
 const editProjectNameBtn = document.getElementById("editProjectNameBtn");
 const editProjectNameArea = document.getElementById("editProjectNameArea");
 const editProjectNameInput = document.getElementById("editProjectNameInput");
 const saveProjectNameBtn = document.getElementById("saveProjectNameBtn");
-
-// グループ管理関連の要素
 const groupListContainer = document.getElementById("groupListContainer");
 const newGroupNameInput = document.getElementById("newGroupName");
 const addGroupButton = document.getElementById("addGroupButton");
 
 // ===== データ構造 =====
+// サジェスト辞書や主義座標など、アプリ内で使うデータの初期値
 const suggestionData = {
   誠実主義: {
     personality: ["嘘がうまい", "裏表がある", "誠実を貫きすぎる頑固さ"],
@@ -87,22 +84,36 @@ const beliefCoordinates = {
   自由主義: { x: 0.4, y: 0.1 },
 };
 
-// ===== プロジェクト管理 =====
-let currentProject = projectSelect.value;
-let characters = getCharacters(currentProject);
-let editingIndex = null;
-let editIndex = -1;
+// ===== プロジェクト・キャラ・グループ管理 =====
+let currentProject = projectSelect.value; // 現在選択中の作品ID
+let characters = getCharacters(currentProject); // 現在のキャラ配列
+let editingIndex = null; // 編集中キャラのインデックス
+let editIndex = -1; // 旧式の編集用（今は未使用）
 
 // ===== グループ名管理 =====
+/**
+ * 指定したプロジェクトのグループリストを取得
+ * @param {string} project - プロジェクトID
+ * @returns {string[]} グループ名配列
+ */
 function getGroupList(project) {
   const saved = localStorage.getItem(project + "_groupList");
   return saved ? JSON.parse(saved) : [];
 }
+/**
+ * 指定したプロジェクトのグループリストを保存
+ * @param {string} project - プロジェクトID
+ * @param {string[]} groupList - グループ名配列
+ */
 function saveGroupList(project, groupList) {
   localStorage.setItem(project + "_groupList", JSON.stringify(groupList));
 }
 let groupList = getGroupList(currentProject);
 
+/**
+ * グループ名配列に新しいグループを追加し、必要なら保存・再描画
+ * @param {string[]} groups - 追加するグループ名配列
+ */
 function addGroupsToList(groups) {
   let updated = false;
   groups.forEach(g => {
@@ -151,7 +162,7 @@ addProjectButton.addEventListener("click", () => {
   renderGroupList();
 
   newProjectNameInput.value = "";
-  saveProjectList(); // 👈 追加！
+  saveProjectList(); 
 });
 
 // 作品名編集機能
@@ -196,11 +207,109 @@ projectSelect.addEventListener("change", () => {
   editProjectNameArea.style.display = "none";
 });
 
-function getCharacters(project) {
-  const saved = localStorage.getItem(project);
-  return saved ? JSON.parse(saved) : [];
+/**
+ * キャラクターオブジェクトが有効かどうかを判定
+ * @param {object} c
+ * @returns {boolean}
+ */
+function isValidCharacter(c) {
+  if (!c || typeof c !== 'object') return false;
+  if (typeof c.name !== 'string' || !c.name.trim()) return false;
+  if (c.beliefX !== undefined && (typeof c.beliefX !== 'number' || c.beliefX < 0 || c.beliefX > 1)) return false;
+  if (c.beliefY !== undefined && (typeof c.beliefY !== 'number' || c.beliefY < 0 || c.beliefY > 1)) return false;
+  if (c.color && !/^#[0-9a-fA-F]{6}$/.test(c.color)) return false;
+  // 他にも必要なら追加
+  return true;
 }
 
+function getCharacters(project) {
+  const saved = localStorage.getItem(project);
+  if (!saved) return [];
+  try {
+    const arr = JSON.parse(saved);
+    if (!Array.isArray(arr)) return [];
+    // 厳密なバリデーション
+    const valid = arr.filter(isValidCharacter);
+    const invalidCount = arr.length - valid.length;
+    if (invalidCount > 0) {
+      showToast(`不正なキャラデータ${invalidCount}件を除外しました`, 'error');
+      // 自動修復（不正データを除外して保存し直す）
+      localStorage.setItem(project, JSON.stringify(valid));
+    }
+    return valid;
+  } catch {
+    return [];
+  }
+}
+
+let sortableInstance = null;
+
+// =========================
+// --- 検索用状態 ---
+// =========================
+let searchQuery = "";
+const characterSearchInput = document.getElementById("characterSearchInput");
+if (characterSearchInput) {
+  characterSearchInput.addEventListener("input", (e) => {
+    searchQuery = e.target.value.trim();
+    renderCharacters();
+  });
+}
+
+// =========================
+// 2. データ管理系関数
+// =========================
+/**
+ * キャラクターカードの並び替え機能を初期化するサブ関数
+ * @returns {void}
+ */
+function initCharacterSortable() {
+  if (sortableInstance) {
+    sortableInstance.destroy();
+  }
+  sortableInstance = new Sortable(characterList, {
+    animation: 150,
+    onEnd: () => {
+      // 並び替え後のキャラ名リスト（表示中のみ）
+      const movedNames = Array.from(characterList.children).map(card =>
+        card.querySelector("h3").childNodes[0].textContent.trim()
+      );
+      // 検索・フィルタ後の表示中キャラ
+      let filtered = characters;
+      if (currentGroupFilter) {
+        filtered = characters.filter(c => c.groups && c.groups.includes(currentGroupFilter));
+      }
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(c =>
+          (c.name && c.name.toLowerCase().includes(q)) ||
+          (c.belief && c.belief.toLowerCase().includes(q)) ||
+          (Array.isArray(c.groups) && c.groups.some(g => g.toLowerCase().includes(q)))
+        );
+      }
+      // 新しい順序のキャラ配列（表示中のみ）
+      const newOrder = movedNames.map(name => filtered.find(c => c.name === name));
+      // 全キャラ配列の中で、表示中キャラだけnewOrderで置き換え、非表示キャラはそのまま
+      let newCharacters = [];
+      let filteredIdx = 0;
+      for (let i = 0; i < characters.length; i++) {
+        if (filtered.includes(characters[i])) {
+          newCharacters.push(newOrder[filteredIdx++] || characters[i]);
+        } else {
+          newCharacters.push(characters[i]);
+        }
+      }
+      characters = newCharacters;
+      localStorage.setItem(currentProject, JSON.stringify(characters));
+      renderCharacters();
+    },
+  });
+}
+
+/**
+ * キャラクター一覧を描画
+ * @returns {void}
+ */
 function renderCharacters() {
   characterList.innerHTML = "";
   if (characters.length === 0) {
@@ -214,122 +323,207 @@ function renderCharacters() {
   if (currentGroupFilter) {
     filtered = characters.filter(c => c.groups && c.groups.includes(currentGroupFilter));
   }
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(c =>
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.belief && c.belief.toLowerCase().includes(q)) ||
+      (Array.isArray(c.groups) && c.groups.some(g => g.toLowerCase().includes(q)))
+    );
+  }
   filtered.forEach((char, index) => {
-    const charItem = document.createElement("div");
-    charItem.className = "character-card";
-    charItem.dataset.name = char.name;
-    const content = document.createElement("div");
-    // グループバッジHTML生成
-    let groupHtml = '';
-    if (char.groups && char.groups.length) {
-      groupHtml = `<span class='group-badges' style='float:right;'>` + char.groups.map(g => `<span class='group-badge'>${g}</span>`).join('') + `</span>`;
-    }
-    content.innerHTML = `
-      <h3 class="card-title">${char.name}${groupHtml}</h3>
-      <p><strong>主義：</strong>${char.belief || "（未設定）"}</p>
-      <p><strong>性格ギャップ：</strong>${char.gapPersonality || "（なし）"}</p>
-      <p><strong>能力ギャップ：</strong>${char.gapAbility || "（なし）"}</p>
-      <p><strong>生い立ちギャップ：</strong>${char.gapBackground || "（なし）"}</p>
-      <p><strong>自由記述：</strong>${char.freeNote || "（なし）"}</p>
-    `;
-    // 編集ボタン
-    const editButton = document.createElement("button");
-    editButton.textContent = "編集";
-    editButton.className = "button btn-edit";
-    editButton.addEventListener("click", () => {
-      openEditModal(index);
+    characterList.appendChild(createCharacterCard(char, index));
+  });
+  // 並び替え機能の初期化
+  initCharacterSortable();
+}
+
+/**
+ * キャラクターカードのタイトル部分（キャラ名＋グループバッジ＋色タグ）を生成するサブ関数
+ * @param {object} char
+ * @returns {string}
+ */
+function createCharacterCardTitle(char) {
+  let groupHtml = createGroupBadges(char.groups);
+  let colorTag = createColorTag(char.color);
+  return `${char.name}${groupHtml}${colorTag}`;
+}
+
+/**
+ * キャラクターカードの詳細情報部分（主義・ギャップ・自由記述）を生成するサブ関数
+ * @param {object} char
+ * @returns {string}
+ */
+function createCharacterCardDetails(char) {
+  // 各項目を縦並びで返す。2行プレビュー＋全文展開ボタン付き
+  const fields = [
+    { label: '主義', value: char.belief || '（未設定）' },
+    { label: '性格G', value: char.gapPersonality || '（なし）' },
+    { label: '能力G', value: char.gapAbility || '（なし）' },
+    { label: '生い立ちG', value: char.gapBackground || '（なし）' },
+    { label: '自由記入', value: char.freeNote || '（なし）' },
+  ];
+  // 各フィールドに一意のIDを付与
+  return `<div class="character-card-vertical">
+    ${fields.map((f, i) => `
+      <div class="card-field">
+        <span class="card-label">${f.label}</span>
+        <span class="card-value" id="card-value-${f.label}-${char.name.replace(/[^a-zA-Z0-9]/g, '')}">${escapeHtml(f.value)}</span>
+        ${f.value.length > 40 || f.value.includes('\n') ? `<button class="card-expand-btn" type="button" data-target="card-value-${f.label}-${char.name.replace(/[^a-zA-Z0-9]/g, '')}">全文</button>` : ''}
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+// カード生成後に全文ボタンのイベントを付与
+function setupCardExpandButtons(cardElem) {
+  const btns = cardElem.querySelectorAll('.card-expand-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetId = btn.getAttribute('data-target');
+      const valueElem = cardElem.querySelector(`#${targetId}`);
+      if (!valueElem) return;
+      const expanded = valueElem.classList.toggle('expanded');
+      btn.textContent = expanded ? '×' : '…';
     });
-    // 削除ボタン
-    const deleteButton = document.createElement("button");
-    deleteButton.textContent = "削除";
-    deleteButton.className = "button btn-delete";
-    deleteButton.addEventListener("click", () => {
-      characters.splice(index, 1);
-      localStorage.setItem(currentProject, JSON.stringify(characters));
-      renderCharacters();
-    });
+  });
+}
+
+/**
+ * キャラクターカードの編集・削除ボタン部分を生成するサブ関数
+ * @param {number} index
+ * @returns {HTMLDivElement}
+ */
+function createCharacterCardButtons(index) {
+  const editButton = createEditButton(index);
+  const deleteButton = createDeleteButton(index);
     const buttonGroup = document.createElement("div");
     buttonGroup.className = "button-group";
     buttonGroup.appendChild(editButton);
     buttonGroup.appendChild(deleteButton);
+  return buttonGroup;
+}
+
+/**
+ * キャラクターカードのDOMを生成
+ * @param {object} char - キャラクターオブジェクト
+ * @param {number} index - キャラのインデックス
+ * @returns {HTMLElement}
+ */
+function createCharacterCard(char, index) {
+    const charItem = document.createElement("div");
+    charItem.className = "character-card";
+    charItem.dataset.name = char.name;
+    const content = document.createElement("div");
+    content.innerHTML = `
+    <h3 class="card-title">${createCharacterCardTitle(char)}</h3>
+    ${createCharacterCardDetails(char)}
+  `;
     charItem.appendChild(content);
-    charItem.appendChild(buttonGroup);
-    characterList.appendChild(charItem);
-  });
-  // キャラカードの並び替え機能を有効化
-  new Sortable(characterList, {
-    animation: 150,
-    onEnd: () => {
-      const newOrder = Array.from(characterList.children).map((card) => {
-        const name = card.querySelector("h3").textContent;
-        return characters.find((c) => c.name === name);
-      });
-      characters = newOrder;
+  charItem.appendChild(createCharacterCardButtons(index));
+  // 全文ボタンのイベントを付与
+  setupCardExpandButtons(charItem);
+  return charItem;
+}
+
+/**
+ * グループバッジHTMLを生成
+ * @param {string[]} groups
+ * @returns {string}
+ */
+function createGroupBadges(groups) {
+  if (groups && groups.length) {
+    return `<span class='group-badges' style='float:right;'>` + groups.map(g => `<span class='group-badge'>${g}</span>`).join('') + `</span>`;
+  }
+  return '';
+}
+
+/**
+ * カラータグHTMLを生成
+ * @param {string} color
+ * @returns {string}
+ */
+function createColorTag(color) {
+  return color ? `<span class=\"color-tag\" style=\"background:${color};display:inline-block;width:16px;height:16px;border-radius:4px;margin-left:6px;vertical-align:middle;border:1.5px solid #ccc;\"></span>` : '';
+}
+
+/**
+ * 編集ボタンを生成
+ * @param {number} index
+ * @returns {HTMLButtonElement}
+ */
+function createEditButton(index) {
+  const btn = document.createElement("button");
+  btn.textContent = "編集";
+  btn.className = "button btn-edit";
+  btn.addEventListener("click", () => {
+      openEditModal(index);
+    });
+  return btn;
+}
+
+/**
+ * 削除ボタンを生成
+ * @param {number} index
+ * @returns {HTMLButtonElement}
+ */
+function createDeleteButton(index) {
+  const btn = document.createElement("button");
+  btn.textContent = "削除";
+  btn.className = "button btn-delete";
+  btn.addEventListener("click", () => {
+      characters.splice(index, 1);
       localStorage.setItem(currentProject, JSON.stringify(characters));
-      renderCharacters(); // 並び替え後に再描画してイベントバインドを維持
-    },
-  });
+      renderCharacters();
+    });
+  return btn;
 }
 
 // 入力に応じた候補表示処理
 beliefInput.addEventListener("input", renderSuggestions);
 
-function renderSuggestions() {
-  const belief = beliefInput.value.trim();
-  const suggestions = suggestionData[belief];
-  suggestionArea.innerHTML = "";
-
-  if (!suggestions) return;
-
-  // type名→日本語ラベル変換
+/**
+ * サジェスト候補グループ（typeごとのdiv）を生成するサブ関数
+ * @param {string} type
+ * @param {object} suggestions
+ * @param {string} belief
+ * @returns {HTMLDivElement}
+ */
+function createSuggestionGroup(type, suggestions, belief) {
   const typeLabels = {
     personality: "性格のギャップ候補",
     ability: "能力のギャップ候補",
     background: "生い立ちのギャップ候補"
   };
-
-  for (const type in suggestions) {
     const group = document.createElement("div");
-    group.innerHTML = `<strong class="block mb-1">${typeLabels[type] || type}：</strong>`;
-
+  group.innerHTML = `<strong class=\"block mb-1\">${typeLabels[type] || type}：</strong>`;
     suggestions[type].slice(0, 3).forEach((gap, i) => {
-      const btn = document.createElement("button");
-      btn.textContent = gap;
-      btn.className =
-        "bg-gray-200 px-2 py-1 mr-2 mb-1 rounded hover:bg-gray-300";
+    const wrap = createSuggestionCandidateButton(belief, type, gap, i);
+    group.appendChild(wrap);
+  });
+  return group;
+}
 
-      // 入力欄に自動反映
-      btn.addEventListener("click", () => {
-        if (type === "personality") gapPersonalityInput.value = gap;
-        if (type === "ability") gapAbilityInput.value = gap;
-        if (type === "background") gapBackgroundInput.value = gap;
-      });
-
-      // 🗑 削除ボタン
-      const del = document.createElement("button");
-      del.textContent = "×";
-      del.className = "ml-1 text-red-500 hover:text-red-700 font-bold";
-      del.addEventListener("click", () => {
-        if (confirm(`この候補「${gap}」を削除しますか？`)) {
-          suggestionData[belief][type].splice(i, 1);
-          saveSuggestionData(); // 保存
-          renderSuggestions(); // 再描画
-        }
-      });
-
-      const wrap = document.createElement("span");
-      wrap.className = "inline-flex items-center";
-      wrap.appendChild(btn);
-      wrap.appendChild(del);
-
-      group.appendChild(wrap);
-    });
-
+/**
+ * 主義入力欄に応じたサジェスト候補を描画する
+ * @returns {void}
+ */
+function renderSuggestions() {
+  const belief = beliefInput.value.trim();
+  const suggestions = suggestionData[belief];
+  suggestionArea.innerHTML = "";
+  if (!suggestions) return;
+  for (const type in suggestions) {
+    const group = createSuggestionGroup(type, suggestions, belief);
     suggestionArea.appendChild(group);
   }
 }
 
-// トースト通知関数を追加
+/**
+ * トースト通知を表示
+ * @param {string} message - メッセージ
+ * @param {string} [type] - 通知タイプ（info, error, success）
+ */
 function showToast(message, type = 'info') {
   let toast = document.createElement('div');
   toast.className = `toast-message toast-${type}`;
@@ -339,15 +533,22 @@ function showToast(message, type = 'info') {
   setTimeout(() => { toast.classList.remove('show'); setTimeout(()=>toast.remove(), 400); }, 2200);
 }
 
+/**
+ * トースト通知ラップ関数
+ */
+function showError(message) { showToast(message, 'error'); }
+function showSuccess(message) { showToast(message, 'success'); }
+function showInfo(message) { showToast(message, 'info'); }
+
 // 保存ボタン処理
 saveButton.addEventListener("click", () => {
   const name = nameInput.value.trim();
-  if (!name) {
-    showToast('キャラ名を入力してください', 'error');
+  if (!isValidCharacterName(name)) {
+    showError('キャラ名を入力してください');
     return;
   }
   if (characters.some(c => c.name === name)) {
-    showToast('同じ名前のキャラが既に存在します', 'error');
+    showError('同じ名前のキャラが既に存在します');
     return;
   }
   const belief = beliefInput.value.trim();
@@ -355,17 +556,23 @@ saveButton.addEventListener("click", () => {
   const gapAbility = gapAbilityInput.value.trim();
   const gapBackground = gapBackgroundInput.value.trim();
   const freeNote = freeNoteInput.value.trim();
-  const beliefX = parseFloat(beliefXInput.value);
-  const beliefY = parseFloat(beliefYInput.value);
-  if ((beliefX < 0 || beliefX > 1) || isNaN(beliefX)) {
-    showToast('X座標は0～1の範囲で入力してください', 'error');
+  // beliefX, beliefYが未入力なら0.5をセット
+  const beliefX = beliefXInput.value === "" ? 0.5 : parseFloat(beliefXInput.value);
+  const beliefY = beliefYInput.value === "" ? 0.5 : parseFloat(beliefYInput.value);
+  if (!isValidCoordinate(beliefX)) {
+    showError('X座標は0～1の範囲で入力してください');
     return;
   }
-  if ((beliefY < 0 || beliefY > 1) || isNaN(beliefY)) {
-    showToast('Y座標は0～1の範囲で入力してください', 'error');
+  if (!isValidCoordinate(beliefY)) {
+    showError('Y座標は0～1の範囲で入力してください');
     return;
   }
   const groups = groupInput.value.split(",").map(g => g.trim()).filter(g => g);
+  const color = colorInput.value || "#b5ead7";
+  if (color && !isValidColorCode(color)) {
+    showError('カラーコードは#RRGGBB形式で入力してください');
+    return;
+  }
   const character = {
     name,
     belief,
@@ -376,6 +583,7 @@ saveButton.addEventListener("click", () => {
     beliefX,
     beliefY,
     groups,
+    color,
   };
   characters.push(character);
   localStorage.setItem(currentProject, JSON.stringify(characters));
@@ -390,10 +598,11 @@ saveButton.addEventListener("click", () => {
   beliefXInput.value = "";
   beliefYInput.value = "";
   groupInput.value = "";
+  colorInput.value = "";
   renderCharacters();
   renderMatrix();
   renderGroupList();
-  showToast('キャラクターを保存しました', 'success');
+  showSuccess('キャラクターを保存しました');
 });
 
 // トーストCSSを追加する（style.cssに追記推奨）
@@ -436,6 +645,10 @@ const storedSuggestion = localStorage.getItem("suggestionData");
 if (storedSuggestion) {
   Object.assign(suggestionData, JSON.parse(storedSuggestion));
 }
+/**
+ * サジェスト辞書データをlocalStorageに保存する
+ * @returns {void}
+ */
 function saveSuggestionData() {
   localStorage.setItem("suggestionData", JSON.stringify(suggestionData));
 }
@@ -444,7 +657,10 @@ addSuggestion.addEventListener("click", () => {
   const type = suggestType.value;
   const value = suggestValue.value.trim();
 
-  if (!belief || !value) return alert("主義と候補内容を入力してください");
+  if (!belief || !value) {
+    showError("主義と候補内容を入力してください");
+    return;
+  }
 
   // 主義がまだ存在しなければ作る
   if (!suggestionData[belief]) {
@@ -459,9 +675,9 @@ addSuggestion.addEventListener("click", () => {
   if (!suggestionData[belief][type].includes(value)) {
     suggestionData[belief][type].push(value);
     saveSuggestionData();
-    alert("サジェストに追加しました！");
+    showSuccess("サジェストに追加しました！");
     suggestValue.value = "";
-    renderSuggestions(); // ✅ ← ここ追加！
+    renderSuggestions(); 
   }
 });
 exportSuggestion.addEventListener("click", () => {
@@ -505,9 +721,9 @@ importSuggestion.addEventListener("change", (event) => {
       }
 
       saveSuggestionData();
-      alert("インポート完了！辞書に統合されました。");
+      showSuccess("インポート完了！辞書に統合されました。");
     } catch (err) {
-      alert("JSONファイルの形式が正しくありません。");
+      showError("JSONファイルの形式が正しくありません。");
     }
   };
 
@@ -538,10 +754,10 @@ deleteProjectButton.addEventListener("click", () => {
   // 最初の作品を選択
   projectSelect.selectedIndex = 0;
   currentProject = projectSelect.value;
-  characters = getCharacters(currentProject);
+    characters = getCharacters(currentProject);
   groupList = getGroupList(currentProject);
   
-  renderCharacters();
+    renderCharacters();
   renderMatrix();
   saveProjectList();
 });
@@ -577,9 +793,9 @@ importFile.addEventListener("change", (event) => {
       localStorage.setItem(currentProject, JSON.stringify(characters));
       renderCharacters();
 
-      alert("インポート成功しました");
+      showSuccess("インポート成功しました");
     } catch (err) {
-      alert("読み込み失敗：JSONファイルの形式が不正です");
+      showError("読み込み失敗：JSONファイルの形式が不正です");
     }
   };
 
@@ -602,35 +818,67 @@ function saveProjectList() {
 
 let isDragging = false;
 let currentDot = null;
-let hasDragListeners = false; // ⭐追加：一度だけドラッグイベントを登録するため
+let hasDragListeners = false; 
+let lastFocusedElement = null;
 
+/**
+ * マトリクスマップ上のキャラドット要素を生成するサブ関数
+ * @param {object} char - キャラクターオブジェクト
+ * @param {number} i - インデックス
+ * @returns {HTMLDivElement}
+ */
+function createMatrixCharDot(char, i) {
+  const pastelColors = [
+    '#ffd1dc', '#b5ead7', '#c7ceea', '#ffdac1', '#e2f0cb', '#b5ead7', '#f3b0c3', '#f6dfeb', '#f7cac9', '#92a8d1', '#f9f6ef', '#f6eac2'
+  ];
+  // 色が未設定なら自動割り当て
+  if (!char.color || !/^#[0-9a-fA-F]{6}$/.test(char.color)) {
+    char.color = pastelColors[i % pastelColors.length];
+  }
+    const x = typeof char.beliefX === "number" ? char.beliefX : 0.5;
+    const y = typeof char.beliefY === "number" ? char.beliefY : 0.5;
+    const dot = document.createElement("div");
+  dot.className = "matrix-char";
+    dot.textContent = char.name;
+    dot.dataset.name = char.name;
+  dot.title = char.name;
+  dot.style.background = char.color;
+  dot.style.color = "#3D312A";
+    dot.style.left = `${x * 100}%`;
+  dot.style.top = `${(1 - y) * 100}%`;
+    dot.style.transform = "translate(-50%, -50%)";
+  return dot;
+}
+
+/**
+ * マトリクスマップを描画する
+ * @returns {void}
+ */
 function renderMatrix() {
   const matrixContainer = document.getElementById("matrix-container");
   matrixContainer.querySelectorAll(".matrix-char").forEach((el) => el.remove());
-
-  characters.forEach((char) => {
-    const x = typeof char.beliefX === "number" ? char.beliefX : 0.5;
-    const y = typeof char.beliefY === "number" ? char.beliefY : 0.5;
-
-    const dot = document.createElement("div");
-    dot.className =
-      "matrix-char absolute text-xs bg-blue-500 text-white px-2 py-1 rounded shadow cursor-default";
-    dot.textContent = char.name;
-    dot.dataset.name = char.name;
-
-    dot.style.left = `${x * 100}%`;
-    dot.style.top = `${(1 - y) * 100}%`; // ⭐上下反転して表示（表示のみ反転）
-    dot.style.transform = "translate(-50%, -50%)";
-
+  let needsSave = false;
+  characters.forEach((char, i) => {
+    // 色が未設定なら保存フラグ
+    if (!char.color || !/^#[0-9a-fA-F]{6}$/.test(char.color)) {
+      needsSave = true;
+    }
+    const dot = createMatrixCharDot(char, i);
     matrixContainer.appendChild(dot);
   });
-
+  if (needsSave) {
+    localStorage.setItem(currentProject, JSON.stringify(characters));
+  }
   if (!hasDragListeners) {
     enableMatrixDrag();
     hasDragListeners = true;
   }
 }
 
+/**
+ * マトリクスマップ上のキャラドットのドラッグ操作を有効化する
+ * @returns {void}
+ */
 function enableMatrixDrag() {
   const matrixContainer = document.getElementById("matrix-container");
   if (!matrixContainer) return;
@@ -673,6 +921,13 @@ function enableMatrixDrag() {
   });
 }
 
+/**
+ * キャラクターカードの座標表示を更新する
+ * @param {string} name - キャラ名
+ * @param {number} x - X座標
+ * @param {number} y - Y座標
+ * @returns {void}
+ */
 function updateCharacterCardCoordinates(name, x, y) {
   const card = document.querySelector(`.character-card[data-name="${name}"]`);
   if (!card) return;
@@ -691,14 +946,15 @@ function updateCharacterCardCoordinates(name, x, y) {
 // 🔁 他の部分にあった renderMatrix や enableMatrixDrag 呼び出し箇所はそのままでOK
 // この修正版だけ貼り替えれば、上下反転問題などが改善される
 
-enableMatrixDrag(); // 👈これ追加！！
+enableMatrixDrag(); // これ追加！！
 
 // モーダル操作
 
-function openEditModal(index) {
-  const char = characters[index];
-  if (!char) return;
-
+/**
+ * 編集モーダルに値をセットするサブ関数
+ * @param {object} char
+ */
+function setEditModalValues(char) {
   modalName.value = char.name || "";
   modalBelief.value = char.belief || "";
   modalPersonality.value = char.gapPersonality || "";
@@ -706,18 +962,53 @@ function openEditModal(index) {
   modalBackground.value = char.gapBackground || "";
   document.getElementById("modalFreeNote").value = char.freeNote || "";
   modalX.value = char.beliefX ?? "";
-  modalY.value =
-    typeof char.beliefY === "number" ? char.beliefY.toFixed(2) : ""; // ✅ ←ここ反転しない！！
+  modalY.value = typeof char.beliefY === "number" ? char.beliefY.toFixed(2) : "";
   modalGroup.value = char.groups ? char.groups.join(",") : "";
-
-  editingIndex = index;
-  console.log("モーダル表示処理中");
-  document.getElementById("editModal").classList.remove("hidden");
+  modalColor.value = char.color || "#b5ead7";
+}
+/**
+ * 編集モーダルをリセットするサブ関数
+ */
+function resetEditModal() {
+  modalName.value = "";
+  modalBelief.value = "";
+  modalPersonality.value = "";
+  modalAbility.value = "";
+  modalBackground.value = "";
+  document.getElementById("modalFreeNote").value = "";
+  modalX.value = "";
+  modalY.value = "";
+  modalGroup.value = "";
+  modalColor.value = "#b5ead7";
 }
 
+/**
+ * キャラ編集モーダルを開く
+ * @param {number} index
+ * @returns {void}
+ */
+function openEditModal(index) {
+  const char = characters[index];
+  if (!char) return;
+  setEditModalValues(char);
+  editingIndex = index;
+  lastFocusedElement = document.activeElement;
+  document.getElementById("editModal").classList.remove("hidden");
+  setTimeout(() => { modalName.focus(); }, 10);
+}
+
+/**
+ * キャラ編集モーダルを閉じる
+ * @returns {void}
+ */
 function closeEditModal() {
   document.getElementById("editModal").classList.add("hidden");
   editingIndex = null;
+  resetEditModal();
+  if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+    setTimeout(() => { lastFocusedElement.focus(); }, 10);
+    lastFocusedElement = null;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -730,6 +1021,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const parsedX = parseFloat(modalX.value);
     const parsedY = parseFloat(modalY.value);
     const groups = modalGroup.value.split(",").map(g => g.trim()).filter(g => g);
+    const color = modalColor.value || "#b5ead7";
     characters[editingIndex] = {
       name: modalName.value.trim(),
       belief: modalBelief.value.trim(),
@@ -740,6 +1032,7 @@ document.addEventListener("DOMContentLoaded", () => {
       beliefX: isNaN(parsedX) ? 0.5 : parsedX,
       beliefY: isNaN(parsedY) ? 0.5 : 1 - parsedY,
       groups,
+      color,
     };
     localStorage.setItem(currentProject, JSON.stringify(characters));
     renderCharacters();
@@ -798,23 +1091,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ===== マトリクスマップ描画 =====
-function renderMatrix() {
-  const matrixContainer = document.getElementById("matrix-container");
-  matrixContainer.querySelectorAll(".matrix-char").forEach((el) => el.remove());
-
-  characters.forEach((char) => {
-    const x = typeof char.beliefX === "number" ? char.beliefX : 0.5;
-    const y = typeof char.beliefY === "number" ? char.beliefY : 0.5;
-    const dot = document.createElement("div");
-    dot.className = "matrix-char";
-    dot.textContent = char.name;
-    dot.dataset.name = char.name;
-    dot.style.left = `${x * 100}%`;
-    dot.style.top = `${(1 - y) * 100}%`;
-    dot.style.transform = "translate(-50%, -50%)";
-    matrixContainer.appendChild(dot);
-  });
-}
+// （ここにある古いrenderMatrix関数を削除）
 
 // ===== サジェスト描画 =====
 function renderGroupSuggest(inputElem, suggestArea, currentValue) {
@@ -860,56 +1137,50 @@ groupFilterBtn.addEventListener("click", () => {
   }
 });
 
+// --- グローバルイベントリスナー登録フラグ ---
+let hasModalListeners = false;
+let hasGroupFilterListeners = false;
+
+// モーダルの外側クリックやESCキーで閉じる
+function setupModalListeners() {
+  if (hasModalListeners) return;
+  const editModal = document.getElementById("editModal");
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !editModal.classList.contains("hidden")) {
+      closeEditModal();
+    }
+  });
+  editModal.addEventListener("mousedown", (e) => {
+    if (e.target === e.currentTarget) closeEditModal();
+  });
+  hasModalListeners = true;
+}
+setupModalListeners();
+
+// グループフィルタ外側クリック
+function setupGroupFilterListeners() {
+  if (hasGroupFilterListeners) return;
 document.addEventListener("click", (e) => {
   if (!groupFilterBtn.contains(e.target) && !groupFilterDropdown.contains(e.target)) {
     groupFilterDropdown.style.display = "none";
   }
 });
-
-function renderGroupFilterDropdown() {
-  groupFilterDropdown.innerHTML = "";
-  if (groupList.length === 0) {
-    groupFilterDropdown.innerHTML = '<div style="padding:8px;">グループ未登録</div>';
-    return;
-  }
-  if (currentGroupFilter) {
-    const clearBtn = document.createElement("button");
-    clearBtn.textContent = "フィルタ解除（全表示）";
-    clearBtn.onclick = () => {
-      currentGroupFilter = null;
-      groupFilterDropdown.style.display = "none";
-      renderCharacters();
-    };
-    groupFilterDropdown.appendChild(clearBtn);
-  }
-  groupList.forEach(g => {
-    const btn = document.createElement("button");
-    btn.textContent = g;
-    btn.onclick = () => {
-      currentGroupFilter = g;
-      groupFilterDropdown.style.display = "none";
-      renderCharacters();
-    };
-    if (g === currentGroupFilter) btn.style.fontWeight = "bold";
-    groupFilterDropdown.appendChild(btn);
-  });
+  hasGroupFilterListeners = true;
 }
+setupGroupFilterListeners();
 
 // グループ追加ボタンのイベントリスナー
 addGroupButton.addEventListener("click", () => {
   const newGroupName = newGroupNameInput.value.trim();
-  if (!newGroupName) return;
-  
+  if (!isValidGroupName(newGroupName)) return;
   if (groupList.includes(newGroupName)) {
-    alert('このグループ名は既に存在します。');
+    showError('このグループ名は既に存在します。');
     return;
   }
-  
   groupList.push(newGroupName);
   saveGroupList(currentProject, groupList);
   renderGroupList();
   renderGroupFilterDropdown();
-  
   newGroupNameInput.value = "";
 });
 
@@ -921,68 +1192,90 @@ newGroupNameInput.addEventListener("keydown", (e) => {
 });
 
 // グループ一覧を表示する関数
+/**
+ * グループリストの各行を生成するサブ関数
+ * @param {string} groupName
+ * @param {number} index
+ * @returns {HTMLDivElement}
+ */
+function createGroupListItem(groupName, index) {
+  const groupItem = document.createElement("div");
+  groupItem.className = "flex items-center justify-between p-2 bg-gray-50 rounded mb-1";
+  // インライン編集用の状態
+  if (groupListContainer._editingIndex === index) {
+    groupItem.innerHTML = `
+      <input type="text" class="input" value="${groupName}" style="width:120px;" aria-label="グループ名編集欄" />
+      <div class="flex gap-1">
+        <button class="button btn-save text-xs">保存</button>
+        <button class="button btn-cancel text-xs">キャンセル</button>
+      </div>
+    `;
+    const input = groupItem.querySelector('input');
+    setTimeout(()=>input.focus(), 10);
+    groupItem.querySelector('.btn-save').onclick = () => {
+      const newName = input.value.trim();
+      if (newName && newName !== groupName && !groupList.includes(newName)) {
+        updateGroupName(groupName, newName);
+      } else if (groupList.includes(newName)) {
+        showToast('同じグループ名が既に存在します', 'error');
+      }
+      groupListContainer._editingIndex = null;
+      renderGroupList();
+    };
+    groupItem.querySelector('.btn-cancel').onclick = () => {
+      groupListContainer._editingIndex = null;
+      renderGroupList();
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') groupItem.querySelector('.btn-save').click();
+      if (e.key === 'Escape') groupItem.querySelector('.btn-cancel').click();
+    });
+  } else {
+    groupItem.innerHTML = `
+      <span class="group-name">${groupName}</span>
+      <div class="flex gap-1">
+        <button class="edit-group-btn button btn-edit text-xs" data-index="${index}">編集</button>
+        <button class="delete-group-btn button btn-delete text-xs" data-index="${index}">削除</button>
+      </div>
+    `;
+    groupItem.querySelector('.edit-group-btn').onclick = () => {
+      groupListContainer._editingIndex = index;
+      renderGroupList();
+    };
+    groupItem.querySelector('.delete-group-btn').onclick = () => {
+      if (confirm(`グループ「${groupName}」を削除しますか？\nこのグループに属するキャラクターからも削除されます。`)) {
+        deleteGroup(groupName);
+      }
+    };
+  }
+  return groupItem;
+}
+
+/**
+ * グループ一覧を描画
+ * @returns {void}
+ */
 function renderGroupList() {
   if (!groupListContainer) return;
+  // 最新のグループリストを必ず取得
+  groupList = getGroupList(currentProject);
   groupListContainer.innerHTML = "";
   if (groupList.length === 0) {
     groupListContainer.innerHTML = '<div class="text-gray-500 text-sm">グループが登録されていません</div>';
     return;
   }
   groupList.forEach((groupName, index) => {
-    const groupItem = document.createElement("div");
-    groupItem.className = "flex items-center justify-between p-2 bg-gray-50 rounded mb-1";
-    // インライン編集用の状態
-    if (groupListContainer._editingIndex === index) {
-      groupItem.innerHTML = `
-        <input type="text" class="input" value="${groupName}" style="width:120px;" aria-label="グループ名編集欄" />
-        <div class="flex gap-1">
-          <button class="button btn-save text-xs">保存</button>
-          <button class="button btn-cancel text-xs">キャンセル</button>
-        </div>
-      `;
-      const input = groupItem.querySelector('input');
-      setTimeout(()=>input.focus(), 10);
-      groupItem.querySelector('.btn-save').onclick = () => {
-        const newName = input.value.trim();
-        if (newName && newName !== groupName && !groupList.includes(newName)) {
-          updateGroupName(groupName, newName);
-        } else if (groupList.includes(newName)) {
-          showToast('同じグループ名が既に存在します', 'error');
-        }
-        groupListContainer._editingIndex = null;
-        renderGroupList();
-      };
-      groupItem.querySelector('.btn-cancel').onclick = () => {
-        groupListContainer._editingIndex = null;
-        renderGroupList();
-      };
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') groupItem.querySelector('.btn-save').click();
-        if (e.key === 'Escape') groupItem.querySelector('.btn-cancel').click();
-      });
-    } else {
-      groupItem.innerHTML = `
-        <span class="group-name">${groupName}</span>
-        <div class="flex gap-1">
-          <button class="edit-group-btn button btn-edit text-xs" data-index="${index}">編集</button>
-          <button class="delete-group-btn button btn-delete text-xs" data-index="${index}">削除</button>
-        </div>
-      `;
-      groupItem.querySelector('.edit-group-btn').onclick = () => {
-        groupListContainer._editingIndex = index;
-        renderGroupList();
-      };
-      groupItem.querySelector('.delete-group-btn').onclick = () => {
-        if (confirm(`グループ「${groupName}」を削除しますか？\nこのグループに属するキャラクターからも削除されます。`)) {
-          deleteGroup(groupName);
-        }
-      };
-    }
+    const groupItem = createGroupListItem(groupName, index);
     groupListContainer.appendChild(groupItem);
   });
 }
 
-// グループ名を更新する関数
+/**
+ * グループ名を更新する
+ * @param {string} oldName - 旧グループ名
+ * @param {string} newName - 新グループ名
+ * @returns {void}
+ */
 function updateGroupName(oldName, newName) {
   // グループリストを更新
   const index = groupList.indexOf(oldName);
@@ -1010,7 +1303,11 @@ function updateGroupName(oldName, newName) {
   renderGroupFilterDropdown();
 }
 
-// グループを削除する関数
+/**
+ * グループを削除する
+ * @param {string} groupName - 削除するグループ名
+ * @returns {void}
+ */
 function deleteGroup(groupName) {
   // グループリストから削除
   const index = groupList.indexOf(groupName);
@@ -1037,13 +1334,130 @@ function deleteGroup(groupName) {
   renderGroupFilterDropdown();
 }
 
-// モーダルの外側クリックやESCキーで閉じる
-const editModal = document.getElementById("editModal");
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !editModal.classList.contains("hidden")) {
-    closeEditModal();
+// カラーピッカーのプレビュー反映
+if (colorInput && document.getElementById('colorInputPreview')) {
+  colorInput.addEventListener('input', () => {
+    document.getElementById('colorInputPreview').style.background = colorInput.value;
+  });
+}
+if (modalColor && document.getElementById('modalColorPreview')) {
+  modalColor.addEventListener('input', () => {
+    document.getElementById('modalColorPreview').style.background = modalColor.value;
+  });
+}
+
+/**
+ * グループフィルタ用ボタンを生成するサブ関数
+ * @param {string} groupName
+ * @returns {HTMLButtonElement}
+ */
+function createGroupFilterButton(groupName) {
+  const btn = document.createElement("button");
+  btn.textContent = groupName;
+  btn.onclick = () => {
+    currentGroupFilter = groupName;
+    groupFilterDropdown.style.display = "none";
+    renderCharacters();
+  };
+  if (groupName === currentGroupFilter) btn.style.fontWeight = "bold";
+  return btn;
+}
+
+/**
+ * グループフィルタのドロップダウンを描画する
+ * @returns {void}
+ */
+function renderGroupFilterDropdown() {
+  groupList = getGroupList(currentProject);
+  groupFilterDropdown.innerHTML = "";
+  if (groupList.length === 0) {
+    groupFilterDropdown.innerHTML = '<div style="padding:8px;">グループ未登録</div>';
+    return;
   }
+  if (currentGroupFilter) {
+    const clearBtn = document.createElement("button");
+    clearBtn.textContent = "フィルタ解除（全表示）";
+    clearBtn.onclick = () => {
+      currentGroupFilter = null;
+      groupFilterDropdown.style.display = "none";
+      renderCharacters();
+    };
+    groupFilterDropdown.appendChild(clearBtn);
+  }
+  groupList.forEach(g => {
+    const btn = createGroupFilterButton(g);
+    groupFilterDropdown.appendChild(btn);
+  });
+}
+
+/**
+ * キャラ名が有効かどうかを判定
+ * @param {string} name
+ * @returns {boolean}
+ * @example
+ * isValidCharacterName("太郎") // true
+ * isValidCharacterName("") // false
+ */
+function isValidCharacterName(name) {
+  return typeof name === 'string' && name.trim().length > 0;
+}
+/**
+ * グループ名が有効かどうかを判定
+ * @param {string} name
+ * @returns {boolean}
+ * @example
+ * isValidGroupName("Aチーム") // true
+ * isValidGroupName("") // false
+ */
+function isValidGroupName(name) {
+  return typeof name === 'string' && name.trim().length > 0;
+}
+/**
+ * 座標値が有効かどうかを判定
+ * @param {number} value
+ * @returns {boolean}
+ * @example
+ * isValidCoordinate(0.5) // true
+ * isValidCoordinate(-1) // false
+ * isValidCoordinate(1.1) // false
+ */
+function isValidCoordinate(value) {
+  return typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 1;
+}
+/**
+ * カラーコードが有効かどうかを判定
+ * @param {string} color
+ * @returns {boolean}
+ * @example
+ * isValidColorCode("#b5ead7") // true
+ * isValidColorCode("red") // false
+ */
+function isValidColorCode(color) {
+  return typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color);
+}
+
+/**
+ * 主要なイベントリスナーを初期化する
+ * @returns {void}
+ */
+function setupEventListeners() {
+  // ...（省略：既存のイベントリスナー初期化処理）
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupEventListeners();
 });
-editModal.addEventListener("mousedown", (e) => {
-  if (e.target === e.currentTarget) closeEditModal();
-});
+
+// HTMLエスケープ関数
+function escapeHtml(str) {
+  return String(str).replace(/[&<>'"]/g, function(tag) {
+    const chars = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    };
+    return chars[tag] || tag;
+  });
+}
