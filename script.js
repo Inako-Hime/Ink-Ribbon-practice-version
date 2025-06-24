@@ -205,6 +205,10 @@ projectSelect.addEventListener("change", () => {
   
   // 編集エリアを非表示にする
   editProjectNameArea.style.display = "none";
+  // カスタム項目編集欄も再描画
+  renderFieldEditUI();
+  // 作品切り替え時に保存
+  localStorage.setItem('lastOpenedProject', projectSelect.value);
 });
 
 /**
@@ -350,28 +354,26 @@ function createCharacterCardTitle(char) {
 }
 
 /**
- * キャラクターカードの詳細情報部分（主義・ギャップ・自由記述）を生成するサブ関数
+ * キャラクターカードの詳細情報部分（年齢・役割・主義・ギャップ・自由記述）を生成するサブ関数
  * @param {object} char
  * @returns {string}
  */
 function createCharacterCardDetails(char) {
-  // 各項目を縦並びで返す。2行プレビュー＋全文展開ボタン付き
-  const fields = [
-    { label: '主義', value: char.belief || '（未設定）' },
-    { label: '性格G', value: char.gapPersonality || '（なし）' },
-    { label: '能力G', value: char.gapAbility || '（なし）' },
-    { label: '生い立ちG', value: char.gapBackground || '（なし）' },
-    { label: '自由記入', value: char.freeNote || '（なし）' },
-  ];
-  // 各フィールドに一意のIDを付与
+  // getAllFieldsの順序で全項目を表示。ただしマトリクス座標（beliefX, beliefY）は除外
+  const fields = getAllFields(currentProject).filter(field => field.key !== 'beliefX' && field.key !== 'beliefY');
   return `<div class="character-card-vertical">
-    ${fields.map((f, i) => `
-      <div class="card-field">
-        <span class="card-label">${f.label}</span>
-        <span class="card-value" id="card-value-${f.label}-${char.name.replace(/[^a-zA-Z0-9]/g, '')}">${escapeHtml(f.value)}</span>
-        ${f.value.length > 40 || f.value.includes('\n') ? `<button class="card-expand-btn" type="button" data-target="card-value-${f.label}-${char.name.replace(/[^a-zA-Z0-9]/g, '')}">全文</button>` : ''}
-      </div>
-    `).join('')}
+    ${fields.map(field => {
+      const value = (char[field.key] !== undefined && char[field.key] !== "") ? char[field.key] : (field.type === "number" ? "（未設定）" : "（なし）");
+      const label = field.label;
+      const id = `card-value-${label}-${char.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+      return `
+        <div class="card-field">
+          <span class="card-label">${label}</span>
+          <span class="card-value" id="${id}">${escapeHtml(value)}</span>
+          ${(typeof value === 'string' && (value.length > 40 || value.includes('\n'))) ? `<button class="card-expand-btn" type="button" data-target="${id}">全文</button>` : ''}
+        </div>
+      `;
+    }).join('')}
   </div>`;
 }
 
@@ -542,7 +544,7 @@ function showInfo(message) { showToast(message, 'info'); }
 
 // 保存ボタン処理
 saveButton.addEventListener("click", () => {
-  const name = nameInput.value.trim();
+  const name = document.getElementById("nameInput").value.trim();
   if (!isValidCharacterName(name)) {
     showError('キャラ名を入力してください');
     return;
@@ -551,14 +553,15 @@ saveButton.addEventListener("click", () => {
     showError('同じ名前のキャラが既に存在します');
     return;
   }
-  const belief = beliefInput.value.trim();
-  const gapPersonality = gapPersonalityInput.value.trim();
-  const gapAbility = gapAbilityInput.value.trim();
-  const gapBackground = gapBackgroundInput.value.trim();
-  const freeNote = freeNoteInput.value.trim();
-  // beliefX, beliefYが未入力なら0.5をセット
-  const beliefX = beliefXInput.value === "" ? 0.5 : parseFloat(beliefXInput.value);
-  const beliefY = beliefYInput.value === "" ? 0.5 : parseFloat(beliefYInput.value);
+  const belief = document.getElementById("beliefInput").value.trim();
+  const gapPersonality = document.getElementById("gapPersonalityInput") ? document.getElementById("gapPersonalityInput").value.trim() : "";
+  const gapAbility = document.getElementById("gapAbilityInput") ? document.getElementById("gapAbilityInput").value.trim() : "";
+  const gapBackground = document.getElementById("gapBackgroundInput") ? document.getElementById("gapBackgroundInput").value.trim() : "";
+  const freeNote = document.getElementById("freeNoteInput") ? document.getElementById("freeNoteInput").value.trim() : "";
+  const beliefXInput = document.getElementById("beliefXInput");
+  const beliefYInput = document.getElementById("beliefYInput");
+  const beliefX = beliefXInput && beliefXInput.value === "" ? 0.5 : parseFloat(beliefXInput ? beliefXInput.value : "0.5");
+  const beliefY = beliefYInput && beliefYInput.value === "" ? 0.5 : parseFloat(beliefYInput ? beliefYInput.value : "0.5");
   if (!isValidCoordinate(beliefX)) {
     showError('X座標は0～1の範囲で入力してください');
     return;
@@ -567,8 +570,10 @@ saveButton.addEventListener("click", () => {
     showError('Y座標は0～1の範囲で入力してください');
     return;
   }
-  const groups = groupInput.value.split(",").map(g => g.trim()).filter(g => g);
-  const color = colorInput.value || "#b5ead7";
+  const groupInput = document.getElementById("groupInput");
+  const groups = groupInput ? groupInput.value.split(",").map(g => g.trim()).filter(g => g) : [];
+  const colorInput = document.getElementById("colorInput");
+  const color = colorInput && colorInput.value ? colorInput.value : "#b5ead7";
   if (color && !isValidColorCode(color)) {
     showError('カラーコードは#RRGGBB形式で入力してください');
     return;
@@ -589,16 +594,16 @@ saveButton.addEventListener("click", () => {
   localStorage.setItem(currentProject, JSON.stringify(characters));
   addGroupsToList(groups);
   // フォームをリセット
-  nameInput.value = "";
-  beliefInput.value = "";
-  gapPersonalityInput.value = "";
-  gapAbilityInput.value = "";
-  gapBackgroundInput.value = "";
-  freeNoteInput.value = "";
-  beliefXInput.value = "";
-  beliefYInput.value = "";
-  groupInput.value = "";
-  colorInput.value = "";
+  if (document.getElementById("nameInput")) document.getElementById("nameInput").value = "";
+  if (document.getElementById("beliefInput")) document.getElementById("beliefInput").value = "";
+  if (document.getElementById("gapPersonalityInput")) document.getElementById("gapPersonalityInput").value = "";
+  if (document.getElementById("gapAbilityInput")) document.getElementById("gapAbilityInput").value = "";
+  if (document.getElementById("gapBackgroundInput")) document.getElementById("gapBackgroundInput").value = "";
+  if (document.getElementById("freeNoteInput")) document.getElementById("freeNoteInput").value = "";
+  if (document.getElementById("beliefXInput")) document.getElementById("beliefXInput").value = "";
+  if (document.getElementById("beliefYInput")) document.getElementById("beliefYInput").value = "";
+  if (document.getElementById("groupInput")) document.getElementById("groupInput").value = "";
+  if (document.getElementById("colorInput")) document.getElementById("colorInput").value = "";
   renderCharacters();
   renderMatrix();
   renderGroupList();
@@ -1024,6 +1029,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const color = modalColor.value || "#b5ead7";
     characters[editingIndex] = {
       name: modalName.value.trim(),
+      // age: modalAge.value.trim(),
+      // role: modalRole.value.trim(),
       belief: modalBelief.value.trim(),
       gapPersonality: modalPersonality.value.trim(),
       gapAbility: modalAbility.value.trim(),
@@ -1461,3 +1468,338 @@ function escapeHtml(str) {
     return chars[tag] || tag;
   });
 }
+
+// ===== 必須項目リスト（削除不可・固定順） =====
+const REQUIRED_FIELDS = [
+  { key: 'name', label: 'キャラ名', type: 'text', required: true },
+  { key: 'belief', label: '主義', type: 'text' },
+  { key: 'group', label: 'グループ', type: 'text' },
+  { key: 'gapPersonality', label: '性格GAP', type: 'text' },
+  { key: 'gapAbility', label: '能力GAP', type: 'text' },
+  { key: 'gapBackground', label: '経歴GAP', type: 'text' },
+  { key: 'beliefX', label: 'マトリクスX座標', type: 'number' },
+  { key: 'beliefY', label: 'マトリクスY座標', type: 'number' },
+  { key: 'freeNote', label: '自由記述', type: 'textarea' },
+  { key: 'color', label: 'キャラ色', type: 'color' },
+];
+
+// ===== 全作品共通デフォルトカスタム項目リスト（ユーザー設定可） =====
+function getDefaultCustomFields() {
+  const saved = localStorage.getItem("defaultCustomFields");
+  return saved ? JSON.parse(saved) : [];
+}
+function setDefaultCustomFields(fields) {
+  localStorage.setItem("defaultCustomFields", JSON.stringify(fields));
+}
+
+// ===== 作品ごとのカスタム項目リスト（主義の上・並び順保存） =====
+function getCustomFields(project) {
+  const saved = localStorage.getItem(project + "_customFields");
+  if (saved) return JSON.parse(saved);
+  // 新規作品は全作品共通デフォルトカスタム項目をコピー
+  return getDefaultCustomFields();
+}
+function setCustomFields(project, fields) {
+  localStorage.setItem(project + "_customFields", JSON.stringify(fields));
+}
+
+// ===== 必須＋カスタム項目の合成（主義の上にカスタム項目を挿入） =====
+function getAllFields(project) {
+  const customFields = getCustomFields(project);
+  // 主義のindexを探す
+  const idx = REQUIRED_FIELDS.findIndex(f => f.key === "belief");
+  // 主義の上にカスタム項目を挿入
+  const fields = [
+    ...REQUIRED_FIELDS.slice(0, idx),
+    ...customFields,
+    ...REQUIRED_FIELDS.slice(idx)
+  ];
+  return fields;
+}
+
+// ===== 項目編集UIの描画・追加・削除 =====
+const fieldEditContainer = document.getElementById("fieldEditContainer");
+const addFieldButton = document.getElementById("addFieldButton");
+const newFieldName = document.getElementById("newFieldName");
+const newFieldType = document.getElementById("newFieldType");
+const setDefaultFieldsButton = document.getElementById("setDefaultFieldsButton");
+
+let fieldSortableInstance = null;
+
+function renderFieldEditUI() {
+  if (!fieldEditContainer) return;
+  const customFields = getCustomFields(currentProject);
+  fieldEditContainer.innerHTML = "";
+  if (customFields.length === 0) {
+    fieldEditContainer.innerHTML = '<div style="padding:8px;">カスタム項目はありません</div>';
+    return;
+  }
+  customFields.forEach((f, i) => {
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-2 mb-1 field-edit-row";
+    row.setAttribute("data-idx", i);
+    row.innerHTML = `
+      <span class="flex-1">${f.label} <span style=\"color:#aaa;font-size:0.9em;\">(${f.type})</span></span>
+      <button class="button btn-delete btn-sm" data-idx="${i}" title="削除"><i class="fas fa-trash"></i></button>
+      <span class="drag-handle" style="cursor:grab;padding:0 0.5em;">☰</span>
+    `;
+    // 削除ボタン
+    row.querySelector(".btn-delete").onclick = () => {
+      const fields = getCustomFields(currentProject);
+      fields.splice(i, 1);
+      setCustomFields(currentProject, fields);
+      renderFieldEditUI();
+    };
+    fieldEditContainer.appendChild(row);
+  });
+  // 並び替え（Sortable.js）
+  if (fieldSortableInstance) fieldSortableInstance.destroy();
+  fieldSortableInstance = new Sortable(fieldEditContainer, {
+    animation: 150,
+    handle: ".drag-handle",
+    onEnd: function () {
+      const newOrder = Array.from(fieldEditContainer.children).map(row => {
+        const idx = parseInt(row.getAttribute("data-idx"), 10);
+        return getCustomFields(currentProject)[idx];
+      });
+      setCustomFields(currentProject, newOrder);
+      renderFieldEditUI();
+    }
+  });
+}
+
+if (addFieldButton && newFieldName && newFieldType) {
+  addFieldButton.onclick = () => {
+    const name = newFieldName.value.trim();
+    const type = newFieldType.value;
+    if (!name) return;
+    const fields = getCustomFields(currentProject);
+    // 重複チェック
+    if (fields.some(f => f.label === name)) {
+      alert("同じ名前の項目が既に存在します");
+      return;
+    }
+    fields.push({ key: "custom_" + Date.now(), label: name, type });
+    setCustomFields(currentProject, fields);
+    newFieldName.value = "";
+    renderFieldEditUI();
+  };
+}
+
+if (setDefaultFieldsButton) {
+  setDefaultFieldsButton.onclick = () => {
+    const fields = getCustomFields(currentProject);
+    setDefaultCustomFields(fields);
+    alert("この項目構成を全作品のデフォルトに設定しました");
+  };
+}
+
+// 初期描画
+renderFieldEditUI();
+
+const characterForm = document.querySelector('.character-form');
+
+function renderCharacterForm() {
+  if (!characterForm) return;
+  // form-titleとsaveButton以外を一旦クリア
+  const title = characterForm.querySelector('.form-title');
+  const saveBtn = characterForm.querySelector('#saveButton');
+  // 既存のform-groupとsuggestionAreaを削除
+  Array.from(characterForm.querySelectorAll('.form-group, #suggestionArea, #groupSuggestArea')).forEach(e => e.remove());
+  // フィールドを取得
+  const fields = getAllFields(currentProject);
+  // 各フィールドを生成
+  fields.forEach(field => {
+    // 必須項目はkeyで分岐
+    let group = document.createElement('div');
+    group.className = 'form-group';
+    let label = document.createElement('label');
+    label.textContent = field.label;
+    group.appendChild(label);
+    let input;
+    if (field.type === 'textarea') {
+      input = document.createElement('textarea');
+      input.className = 'input';
+      input.rows = 3;
+      input.id = field.key + 'Input';
+      input.placeholder = field.label + 'を入力';
+      input.setAttribute('aria-label', field.label + '入力欄');
+    } else if (field.type === 'color') {
+      input = document.createElement('input');
+      input.type = 'color';
+      input.className = 'input';
+      input.id = field.key + 'Input';
+      input.value = '#b5ead7';
+      input.setAttribute('aria-label', field.label + '選択欄');
+      // カラープレビュー
+      const preview = document.createElement('span');
+      preview.className = 'color-preview';
+      preview.style.background = '#b5ead7';
+      preview.id = field.key + 'InputPreview';
+      input.addEventListener('input', () => {
+        preview.style.background = input.value;
+      });
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.alignItems = 'center';
+      wrap.style.gap = '8px';
+      wrap.appendChild(input);
+      wrap.appendChild(preview);
+      group.appendChild(wrap);
+      characterForm.insertBefore(group, saveBtn);
+      return;
+    } else {
+      input = document.createElement('input');
+      input.type = field.type === 'number' ? 'number' : 'text';
+      input.className = 'input';
+      input.id = field.key + 'Input';
+      input.placeholder = field.label + 'を入力';
+      input.setAttribute('aria-label', field.label + '入力欄');
+    }
+    group.appendChild(input);
+    // サジェスト欄やグループサジェスト欄の挿入
+    if (field.key === 'group') {
+      const suggest = document.createElement('div');
+      suggest.id = 'groupSuggestArea';
+      suggest.className = 'suggestion-area';
+      group.appendChild(suggest);
+    }
+    if (field.key === 'belief') {
+      const suggest = document.createElement('div');
+      suggest.id = 'suggestionArea';
+      suggest.className = 'suggestion-area';
+      group.appendChild(suggest);
+    }
+    characterForm.insertBefore(group, saveBtn);
+  });
+}
+
+// カスタム項目編集時にもフォームを再描画
+if (fieldEditContainer) {
+  const origRender = renderFieldEditUI;
+  renderFieldEditUI = function() {
+    origRender.apply(this, arguments);
+    renderCharacterForm();
+  };
+}
+// 初期描画
+renderCharacterForm();
+
+function renderEditModalFields(char = {}) {
+  const modalFields = document.querySelector('.modal-fields');
+  const modalNotes = document.querySelector('.modal-notes');
+  if (!modalFields || !modalNotes) return;
+  // 既存のmb-3をクリア
+  Array.from(modalFields.querySelectorAll('.mb-3')).forEach(e => e.remove());
+  Array.from(modalNotes.querySelectorAll('.mb-3')).forEach(e => e.remove());
+  // フィールドを取得
+  const fields = getAllFields(currentProject);
+  fields.forEach(field => {
+    let group = document.createElement('div');
+    group.className = 'mb-3';
+    let label = document.createElement('label');
+    label.textContent = field.label;
+    group.appendChild(label);
+    let input;
+    if (field.type === 'textarea') {
+      input = document.createElement('textarea');
+      input.className = 'input';
+      input.rows = 3;
+      input.id = 'modal' + capitalize(field.key);
+      input.placeholder = field.label + 'を入力';
+      input.setAttribute('aria-label', field.label + '編集欄');
+      input.value = char[field.key] || '';
+    } else if (field.type === 'color') {
+      input = document.createElement('input');
+      input.type = 'color';
+      input.className = 'input';
+      input.id = 'modal' + capitalize(field.key);
+      input.value = char[field.key] || '#b5ead7';
+      input.setAttribute('aria-label', field.label + '編集欄');
+      // カラープレビュー
+      const preview = document.createElement('span');
+      preview.className = 'color-preview';
+      preview.style.background = input.value;
+      preview.id = 'modal' + capitalize(field.key) + 'Preview';
+      input.addEventListener('input', () => {
+        preview.style.background = input.value;
+      });
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.alignItems = 'center';
+      wrap.style.gap = '8px';
+      wrap.appendChild(input);
+      wrap.appendChild(preview);
+      group.appendChild(wrap);
+      modalFields.appendChild(group);
+      return;
+    } else {
+      input = document.createElement('input');
+      input.type = field.type === 'number' ? 'number' : 'text';
+      input.className = 'input';
+      input.id = 'modal' + capitalize(field.key);
+      input.placeholder = field.label + 'を入力';
+      input.setAttribute('aria-label', field.label + '編集欄');
+      input.value = char[field.key] || '';
+    }
+    group.appendChild(input);
+    // サジェスト欄やグループサジェスト欄の挿入
+    if (field.key === 'group') {
+      const suggest = document.createElement('div');
+      suggest.id = 'modalGroupSuggestArea';
+      suggest.className = 'suggestion-area';
+      group.appendChild(suggest);
+    }
+    modalFields.appendChild(group);
+    if (field.key === 'freeNote') {
+      modalNotes.appendChild(group);
+    }
+  });
+}
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+// モーダルオープン時に自動生成
+const origOpenEditModal = openEditModal;
+openEditModal = function(index) {
+  const char = characters[index];
+  renderEditModalFields(char);
+  origOpenEditModal.apply(this, arguments);
+};
+// カスタム項目編集時にも再描画
+if (fieldEditContainer) {
+  const origRender = renderFieldEditUI;
+  renderFieldEditUI = function() {
+    origRender.apply(this, arguments);
+    renderCharacterForm();
+    renderEditModalFields();
+  };
+}
+// 初期描画
+renderEditModalFields();
+
+// カスタム項目追加・並べ替え時にキャラカードも即再描画
+if (fieldEditContainer) {
+  const origRender = renderFieldEditUI;
+  renderFieldEditUI = function() {
+    origRender.apply(this, arguments);
+    renderCharacterForm();
+    renderEditModalFields();
+    renderCharacters();
+  };
+}
+
+// ページ読み込み時に直近の作品を自動選択
+window.addEventListener('DOMContentLoaded', () => {
+  const last = localStorage.getItem('lastOpenedProject');
+  if (last && Array.from(projectSelect.options).some(opt => opt.value === last)) {
+    projectSelect.value = last;
+    currentProject = last;
+    characters = getCharacters(currentProject);
+    groupList = getGroupList(currentProject);
+    renderCharacters();
+    renderMatrix();
+    renderGroupList();
+    renderFieldEditUI();
+  }
+});
